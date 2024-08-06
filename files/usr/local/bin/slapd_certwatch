@@ -1,0 +1,10 @@
+#!/bin/bash
+# $Id$
+#
+# Script simple basé sur le fonctionnement de /etc/cron.daily/certwatch
+#
+
+cert=`grep -E "^\s*TLSCertificateFile " /etc/openldap/slapd_ref.conf | awk '{ print $2 }'`
+
+/usr/bin/certwatch -q "$cert" && /usr/bin/certwatch -a tech-sys@dsi.univ-paris-diderot.fr "$cert" | /usr/sbin/sendmail -oem -oi -t 2>/dev/null
+

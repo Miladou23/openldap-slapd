@@ -1,0 +1,15 @@
+# $Id$
+# fragment de configuration pour slapd pour un replica
+syncrepl rid={{ slapd_syncrepl_rid }}
+	provider="{{ ldap_master_url }}"
+	{{ slapd_syncrepl_conftls }}
+	binddn="{{ ldap_syncrepl_binddn }}"
+	bindmethod=simple
+	credentials="{{ ldap_syncrepl_pass }}"
+	searchbase="{{ ldap_syncrepl_searchbase }}"
+	filter="{{ slapd_syncrepl_filter }}"
+	scope=sub
+	attrs="*, +"
+	schemachecking=on
+	type=refreshAndPersist
+	retry="60 10 300 +"

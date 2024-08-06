@@ -1,0 +1,7 @@
+[Service]
+# pour une configuration séparée des logs
+LogNamespace=slapd
+# ou plutot on-failure, mais on a eu des feintes avec certains services… un stop propre l'arrêtera de toute façon
+Restart=always
+# des fois que le drop-in /usr/lib/systemd/system/slapd.service.d/slapd-remain-after-exit.conf n'ait pas été chargé (selon les versions)
+RemainAfterExit=no

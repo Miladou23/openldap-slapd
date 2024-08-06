@@ -1,0 +1,253 @@
+---
+## Packages
+##
+
+- name: ensure packages for a LDAP server are installed
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ slapd_packages }}"
+  tags: packages
+
+- name: defaults clean-up
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ slapd_conf_basedir }}/slapd.d"
+    - /var/lib/ldap/data.mdb
+    - /var/lib/ldap/lock.mdb
+  when: slapd_reset
+
+## Gestion du fichier contenant le mot de passe root de slapd
+## et le fragment de fichier de configuration slapd.conf avec le hash de
+## ce mot de passe
+
+- name: rootpw noeol file
+  shell: cp -a '{{ ldap_root_pass_file }}' '{{ ldap_root_pass_file }}.noeol'; perl -pi -e 'chomp' '{{ ldap_root_pass_file }}.noeol'
+  args:
+    creates: "{{ ldap_root_pass_file }}.noeol"
+  tags: ldappass
+
+- name: rootpw hash if needed
+  shell: slappasswd -T '{{ ldap_root_pass_file }}.noeol'
+  args:
+    creates: "{{ slapd_rootpw_file }}"
+  register: rootpwhash
+  tags: ldappass
+
+- name: create slapd rootpw file if needed
+  lineinfile:
+    path: "{{ slapd_rootpw_file }}"
+    regexp: '^rootpw.*$'
+    line: 'rootpw	{{ rootpwhash.stdout }}'
+    owner: root
+    group: "{{ slapd_group }}"
+    mode: 0440
+    create: true
+  tags: ldappass
+  when: rootpwhash.changed
+  notify: Check and restart slapd
+
+## Divers repertoires
+##
+
+- name: common OpenLDAP directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  with_items: '{{ slapd_conf_basedir }}/schema'
+
+- name: backup directory
+  file:
+    path: "{{ slapd_backupdir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  when: slapd_backupdir is defined
+
+- name: data OpenLDAP single directory
+  file:
+    path: "{{ slapd_vardir }}"
+    state: directory
+    owner: "{{ slapd_user }}"
+    group: "{{ slapd_group }}"
+    mode: 0700
+
+# XXX suppose que /root est le repertoire contenant slapd_rootpw_file,
+# slapd_syncrepl_file. Il faut donc qu'il soit "searchable"
+- name: /root perms
+  file:
+    path: /root
+    state: directory
+    owner: root
+    group: root
+    mode: 0751
+
+## Schema
+##
+
+- name: custom schemas directories
+  file:
+    path: "{{ slapd_conf_basedir }}/schema/{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  with_items: ['p5', 'p7']
+
+- name: install common LDAP schema files
+  copy:
+    src: "etc/openldap/schema/{{ item }}"
+    dest: "{{ slapd_conf_basedir }}/schema/{{ item }}"
+    owner: root
+    group: root
+    mode: 0444
+  with_items:
+    - eduorg.schema
+    - eduperson.schema
+    - p5/courier.schema
+    - p5/eemail.schema
+    - p5/p5.schema
+    - p7/radius.schema
+    - p7/univ-paris7.schema
+    - ppolicy.schema
+    - samba.schema
+    - supann.schema
+  notify:
+    - Check and restart slapd
+
+## Scripts
+##
+
+- name: install local scripts
+  copy:
+    src: "usr/local/bin/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - slapdump
+    - slapd_certwatch
+
+- name: install local replica scripts
+  template:
+    src: "usr/local/bin/{{ item }}.j2"
+    dest: "/usr/local/bin/{{ item }}"
+    owner: root
+    group: root
+    mode: 0755
+  with_items:
+    - check_syncrepl
+  when: ldap_syncrepl_pass_file is defined
+
+- name: ajout openldap au groupe ssl-cert
+  user:
+    name: "{{ slapd_user }}"
+    append: true
+    groups: ssl-cert
+
+## slapd.conf et fragments pour celui-ci
+##
+
+# Uniquement pour les serveurs replicas
+- name: syncpw noeol file
+  shell: cp -a '{{ ldap_syncrepl_pass_file }}' '{{ ldap_syncrepl_pass_file }}.noeol'; perl -pi -e 'chomp' '{{ ldap_syncrepl_pass_file }}.noeol'
+  args:
+    creates: "{{ ldap_syncrepl_pass_file }}.noeol"
+  when: ldap_syncrepl_pass_file is defined
+
+- name: /root/.slapd_syncrepl
+  template:
+    src: "{{ item }}"
+    dest: "{{ slapd_syncrepl_file }}"
+    owner: root
+    group: "{{ slapd_group }}"
+    mode: 0440
+  when: ldap_syncrepl_pass_file is defined
+  with_first_found:
+    # in the playbook directory
+    - "{{ playbook_dir|realpath }}/templates/root/.slapd_syncrepl.conf.j2"
+    # in this role templates/ directory
+    - root/.slapd_syncrepl.conf.j2
+  notify: Check and restart slapd
+
+- name: "{{ slapd_conf_basedir }}/slapd.conf"
+  template:
+    src: "{{ item }}"
+    dest: "{{ slapd_conf_basedir }}/slapd.conf"
+    owner: root
+    group: "{{ slapd_group }}"
+    mode: 0640
+  with_first_found:
+    # in a variable
+    - "{{ slapd_conf_template }}"
+    # in the playbook directory
+    - "{{ playbook_dir|realpath }}/templates/etc/openldap/slapd.conf.j2"
+    # in this role templates/ directory
+    - etc/openldap/slapd.conf.j2
+  notify: Check and restart slapd
+  tags: slapd.conf
+
+## Configuration du service slapd
+##
+
+- name: slapd_sysconfig
+  template:
+    src: "etc/{{ slapd_sysconfig }}.j2"
+    dest: "/etc/{{ slapd_sysconfig }}"
+    owner: root
+    group: root
+    mode: 0640
+  notify: Check and restart slapd
+
+- name: slapd service unit extra config directory
+  file:
+    path: /etc/systemd/system/slapd.service.d
+    state: directory
+  tags: systemd
+  notify: reload systemctl
+
+- name: slapd service unit extra config
+  template:
+    src: "etc/systemd/system/slapd.service.d/extra.conf.j2"
+    dest: "/etc/systemd/system/slapd.service.d/extra.conf"
+  tags: systemd
+  notify: reload systemd
+
+- name: slapd journald namespace config
+  template:
+    src: "etc/systemd/journald@slapd.conf.j2"
+    dest: "/etc/systemd/journald@slapd.conf"
+  tags: systemd
+  notify: restart journald
+
+## Crontab
+##
+- name: ancien /etc/cron.d/slapd.cron
+  file:
+    path: /etc/cron.d/slapd.cron
+    state: absent
+  tags: cron
+
+- name: /etc/cron.d/slapd
+  template:
+    src: etc/cron.d/slapd.j2
+    dest: /etc/cron.d/slapd
+    owner: root
+    group: root
+    mode: 0444
+  tags: cron
+
+## Enable slapd
+##
+
+- name: enable slapd
+  service:
+    name: slapd
+    enabled: true

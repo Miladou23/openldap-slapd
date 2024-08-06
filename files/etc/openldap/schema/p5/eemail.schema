@@ -1,0 +1,96 @@
+#
+# Depends of misc.schema
+# * mailHost (mail host or transport:optionnal mail host)
+# 
+# Depends of courier.schema
+# * mailbox (directory where messages are stored)
+#
+# Easter-eggs OID: 1.3.6.1.4.1.10650
+# Easter-eggs OID for LDAP: 1.3.6.1.4.1.10650.2.
+#
+# 1.3.6.1.4.1.10650.1 SNMP OID
+# 1.3.6.1.4.1.10650.2 LDAP OID
+# 1.3.6.1.4.1.10650.2.1  Ldap Attribut
+# 1.3.6.1.4.1.10650.2.1.1  Admin sys Ldap Attribut
+# 1.3.6.1.4.1.10650.2.1.2  Dev Ldap Attribut
+# 1.3.6.1.4.1.10650.2.2  Ldap Objectclass
+# 1.3.6.1.4.1.10650.2.2.1  Admin sys Ldap Objectclass
+# 1.3.6.1.4.1.10650.2.2.2  Dev Ldap Objectclass
+
+
+attributetype (1.3.6.1.4.1.10650.2.1.1.1
+  NAME 'eeallowedservices'
+  DESC 'List of allowed services'
+  EQUALITY caseIgnoreMatch
+  SUBSTR caseIgnoreSubstringsMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15)
+
+attributetype ( 1.3.6.1.4.1.10650.2.1.1.2 NAME 'mailAlternateAddress'
+  DESC 'Secondary (alias) mailaddresses'
+  EQUALITY caseIgnoreMatch
+  SUBSTR caseIgnoreSubstringsMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15)
+
+attributetype (1.3.6.1.4.1.10650.2.1.1.3
+  NAME 'eedeliveryobject'
+  DESC 'The DN of an eemaildelivery object'
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.12
+  EQUALITY distinguishedNameMatch)
+
+#attributetype ( 1.3.6.1.4.1.10650.2.1.1.4 NAME 'mailForwardingAddress'
+#  DESC 'Mail is routed to this attribute'
+#  EQUALITY caseIgnoreMatch
+#  SUBSTR caseIgnoreSubstringsMatch
+#  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15)
+
+attributetype ( 1.3.6.1.4.1.10650.2.1.1.5 NAME 'mailQuota'
+  DESC 'Maximum mailbox size and/or number of messages'
+  EQUALITY caseIgnoreMatch
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.15)
+
+attributetype (1.3.6.1.4.1.10650.2.1.1.6
+  NAME 'eekeepmail'
+  EQUALITY booleanMatch
+  DESC 'Must the mails bu kept in the mailbox if there is a mailForwardingAddress'
+  SYNTAX 1.3.6.1.4.1.1466.115.121.1.7)
+
+# This allow only mail forwarding (aliases)
+objectclass (1.3.6.1.4.1.10650.2.2.1.1
+  NAME 'eemailalias'
+  DESC 'Objectclass allowing reception of emails'
+  AUXILIARY
+  MAY ( mail $ mailAlternateAddress $ mailForwardingAddress $ eeallowedservices))
+
+# This allow full mail account
+objectclass (1.3.6.1.4.1.10650.2.2.1.5
+  NAME 'eemailoptionaldelivery'
+  DESC 'Objectclass allowing reception and storage of emails'
+  SUP eemailalias
+  AUXILIARY
+  MAY (mailbox $ uid $ userPassword $ mail $ mailQuota $ mailhost $ eekeepmail ))
+
+# This allow full mail account
+objectclass (1.3.6.1.4.1.10650.2.2.1.3
+  NAME 'eemaildelivery'
+  DESC 'Objectclass allowing reception and storage of emails'
+  SUP eemailalias
+  AUXILIARY
+  MUST ( uid $ mail $ userpassword $ mailbox)
+  MAY (mailQuota $ mailhost $ eekeepmail ))
+
+# This could be used for transport as well as postfix style virtual domains
+objectclass (1.3.6.1.4.1.10650.2.2.1.4
+  NAME 'eetransport'
+  DESC 'Objectclass for domain routing'
+  SUP top
+  STRUCTURAL
+  MUST ( dc $ mailhost ))
+
+# This allow full mail account 
+objectclass (1.3.6.1.4.1.10650.2.2.1.6
+  NAME 'eemaildeliverystructural'
+  DESC 'Objectclass allowing reception and storage of emails'
+  STRUCTURAL
+  MUST (uid $ mail $ userpassword $ mailbox )
+  MAY (mailQuota $ mailhost $ eekeepmail $ 
+       mailAlternateAddress $ mailForwardingAddress $ eeallowedservices))	

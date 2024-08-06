@@ -1,0 +1,93 @@
+attributetype ( 1.3.6.1.4.1.10882.2.1.12 NAME 'expireTimestamp'
+	DESC 'Date d expiration du compte'
+	EQUALITY generalizedTimeMatch
+	ORDERING generalizedTimeOrderingMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+	SINGLE-VALUE )
+attributetype ( 1.3.6.1.4.1.10882.2.1.29 NAME 'allowedServices'
+	DESC 'Services allowed like (SMTP,FTP, ...)'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+attributetype ( 1.3.6.1.4.1.10882.2.1.35 NAME 'p5birthday'
+	DESC 'Date de naissance'
+	EQUALITY generalizedTimeMatch
+	ORDERING generalizedTimeOrderingMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+	SINGLE-VALUE )
+attributetype ( 1.3.6.1.4.1.10882.2.1.36 NAME 'p5codind'
+	DESC 'Numero Informatique Apogee'
+	EQUALITY caseExactIA5Match
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+	SINGLE-VALUE )
+attributetype ( 1.3.6.1.4.1.10882.2.1.37 NAME 'p5charte'
+	DESC 'indique que la personne a signe la charte'
+	EQUALITY booleanMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.7 SINGLE-VALUE )
+attributetype ( 1.3.6.1.4.1.10882.2.1.38 NAME 'p5section'
+	DESC 'Section pour Etudiant'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+attributetype ( 1.3.6.1.4.1.10882.2.1.39 NAME 'p5gestweb'
+	DESC 'Droit acces pour gestionnaire du Web'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 SINGLE-VALUE )
+attributetype ( 1.3.6.1.4.1.10882.2.1.40 NAME 'p5statut'
+	DESC 'Statut de la personne'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+attributetype ( 1.3.6.1.4.1.10882.2.1.123 NAME 'p5abbreviation'
+	DESC 'contenant l abr?viation du nom de structure'
+	SUP name
+	SINGLE-VALUE )
+attributetype ( 1.3.6.1.4.1.10882.2.1.9 NAME 'diplome'
+	DESC 'Texte des diplomes prepares par un etudiant'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+attributetype ( 1.3.6.1.4.1.10882.2.1.140 NAME 'p5GroupeModerateurDN' 
+	DESC 'Moderateur de la liste'
+	EQUALITY distinguishedNameMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.12 )
+attributetype ( 1.3.6.1.4.1.10882.2.1.141 NAME 'p5SympaType'
+	DESC 'Type de liste  SYMPA'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch 
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+attributetype ( 1.3.6.1.4.1.10882.2.1.28 NAME 'schoolYear'
+	DESC 'Annee Universitaire'
+	EQUALITY numericStringMatch
+	SUBSTR numericStringSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.36{6} )
+attributetype ( 1.3.6.1.4.1.10882.2.1.142 NAME 'p5SympaVisibilite'
+	DESC 'Visibilite de liste SYMPA'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+
+attributetype ( 1.3.6.1.4.1.10882.2.1.143 NAME 'P5MailGroupType'
+	DESC 'type de mailgroup'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15 )
+
+objectclass ( 1.3.6.1.4.1.10882.2.2.0 NAME 'p5PersonCommon'
+	DESC 'Profil commun d une personne'
+	SUP top AUXILIARY
+	MUST ( uid $ sn $ givenName $ cn $ userPassword )
+	MAY ( p5birthday $ p5section $ p5codind $ diplome $ p5gestweb $ p5charte $ p5statut ) )
+objectclass ( 1.3.6.1.4.1.10882.2.2.12 NAME 'p5structure'
+	SUP top AUXILIARY
+	MAY p5abbreviation )
+objectclass ( 1.3.6.1.4.1.10882.2.2.9 NAME 'p5group'
+	DESC 'Groupe'
+	SUP TOP AUXILIARY
+	MAY ( p5GroupeModerateurDN $ p5SympaType $ p5SympaVisibilite $ P5MailGroupType ) )
+objectclass ( 1.3.6.1.4.1.10882.2.2.31 NAME 'p5ouEtudiant'
+	DESC 'pour information utile a tous'
+	SUP organizationalUnit STRUCTURAL
+	MAY schoolYear )

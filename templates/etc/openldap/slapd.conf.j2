@@ -1,0 +1,128 @@
+# $Id$
+
+# Configuration OpenLDAP slapd
+
+# See slapd.conf(5) for details on configuration options.
+# This file should NOT be world readable.
+#
+include		{{slapd_conf_basedir}}/schema/core.schema
+include		{{slapd_conf_basedir}}/schema/cosine.schema
+include		{{slapd_conf_basedir}}/schema/inetorgperson.schema
+include		{{slapd_conf_basedir}}/schema/misc.schema
+include		{{slapd_conf_basedir}}/schema/nis.schema
+include		{{slapd_conf_basedir}}/schema/ppolicy.schema
+# Extra commun
+include		{{slapd_conf_basedir}}/schema/eduorg.schema
+include		{{slapd_conf_basedir}}/schema/eduperson.schema
+include		{{slapd_conf_basedir}}/schema/samba.schema
+include		{{slapd_conf_basedir}}/schema/supann.schema
+
+# Allow LDAPv2 client connections.  This is NOT the default.
+#allow bind_v2
+
+# Do not enable referrals until AFTER you have a working directory
+# service AND an understanding of referrals.
+#referral	ldap://root.openldap.org
+
+pidfile		{{slapd_run_dir}}/slapd.pid
+argsfile	{{slapd_run_dir}}/slapd.args
+
+# Load dynamic backend modules:
+modulepath	{{ slapd_modulepath }}
+
+# Modules available in openldap-servers-overlays RPM package
+# Module syncprov.la is now statically linked with slapd and there
+# is no need to load it here
+# moduleload accesslog.la
+# moduleload auditlog.la
+# moduleload denyop.la
+# moduleload dyngroup.la
+# moduleload dynlist.la
+# moduleload lastmod.la
+# moduleload pcache.la
+# moduleload ppolicy.la
+# moduleload refint.la
+# moduleload retcode.la
+# moduleload rwm.la
+# moduleload syncprov.la
+# moduleload smbk5pwd.la
+# moduleload translucent.la
+# moduleload unique.la
+# moduleload valsort.la
+# moduleload accesslog.la
+# moduleload syncprov.la
+# moduleload unique.la
+{% if slapd_overlay_memberof %}
+moduleload memberof.la
+{% endif %}
+
+# Backends
+moduleload back_mdb
+
+# rootdn can always read and write EVERYTHING!
+
+# Racine et metadata
+
+access to dn.base="" by * read
+access to dn.base="cn=Subschema" by * read
+
+# Mots de passe
+
+access to attrs=userPassword,sambaLMPassword,sambaNTPassword
+	by anonymous auth
+	by * none
+
+# People
+
+access to dn.sub="ou=people,{{ slapd_basedn }}"
+	by self read
+	by * none
+
+# Le reste
+
+access to *
+	by * none
+
+sizelimit unlimited
+
+loglevel stats
+
+TLSCACertificateFile	{{slapd_cert_basedir}}/certs/cachain.pem
+TLSCertificateFile	{{slapd_cert_basedir}}/certs/{{slapd_cert_basename}}.pem
+TLSCertificateKeyFile	{{slapd_cert_basedir}}/private/{{slapd_cert_basename}}.key.pem
+
+#######################################################################
+# database definitions
+#######################################################################
+
+database	mdb
+maxsize		1073741824
+suffix		"{{ slapd_basedn }}"
+rootdn		"cn=root,{{ slapd_basedn }}"
+include		{{ slapd_rootpw_file }}
+#rootpw		{SSHA}***************************
+directory	{{slapd_vardir}}
+
+{% if slapd_overlay_memberof %}
+overlay memberof
+{% endif %}
+
+{% if ldap_syncrepl_pass_file is defined and ldap_syncrepl_pass_file %}
+include		{{ slapd_syncrepl_file }}
+{% endif %}
+
+# Indices to maintain for this database
+index	objectClass	eq
+index	uid	eq,sub
+index	cn	eq,sub
+index	supannListeRouge	eq
+index	eduPersonPrimaryAffiliation	eq
+index	eduPersonAffiliation	eq
+index	entryUUID,entryCSN	eq
+index	supannEtuId	eq
+index	supannEmpId	eq
+index	mail	eq,sub
+index	member	eq
+{% if slapd_overlay_memberof %}
+index	memberof	eq
+{% endif %}

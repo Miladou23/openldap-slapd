@@ -1,0 +1,69 @@
+#! /bin/sh -
+# $Id$
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+
+# Dump base slapd
+
+PROGNAME="$(basename $0)"
+
+# set umask
+umask 077
+
+# pathname to commands
+for d in /usr/pkg/sbin /usr/sbin; do
+	if [ -x $d/slapcat ]; then
+		slapcat_prog=$d/slapcat
+		break;
+	fi
+done
+
+# display usage
+usage()
+{
+	echo "usage: $PROGNAME [-b suffix|-n dbnum] [-d] destdir"
+}
+
+# date suffix
+DATEPREF="$(date +%Y%m%d-%H%M%S)"
+
+# process args
+opts='n:b:d'
+suffix=
+dbnum=
+while getopts $opts opt && opt=-$opt; do
+	case $opt in
+	-b) suffix="${OPTARG}";;
+	-n) dbnum="${OPTARG}";;
+	-d) DATEPREF="$(date +%d)";;
+	esac
+done
+case ":${suffix}:${dbnum}:" in
+	::*:) dbsel="-n ${dbnum}"; dumpsuffix="-${dbnum}" ;;
+	:*::) dbsel="-b ${suffix}"; dumpsuffix="-${suffix}" ;;
+	:::) dbsel= ;;
+	*) usage; exit 2;;
+esac
+shift $(($OPTIND -1))
+if [ $# -lt 1 ]; then
+	usage
+	exit 2
+fi
+
+# check dump directory
+DUMPDIR="$1"
+if [ -d "$DUMPDIR" ]; then :; else
+	echo 1>&2 "$PROGNAME: $DUMPDIR: does not exist or not a directory"
+	exit 1
+fi
+
+# dumpfile
+dumpfile="${DUMPDIR}/dump${dumpsuffix}.${DATEPREF}"
+
+# dump it
+${slapcat_prog} ${dbsel} > "${dumpfile}" || exit 1
+
+# compress it
+bzip2 -f -9 "${dumpfile}" || exit 1
+
+exit 0

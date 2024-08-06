@@ -1,0 +1,19 @@
+# $Id$
+---
+# Restart handlers
+- name: Check and restart slapd
+  command: "sudo -u {{slapd_user}} slaptest -f {{slapd_conf_basedir}}/slapd.conf {{ slaptest_extra }}"
+  notify: Restart slapd
+
+- name: Restart slapd
+  service:
+    name: slapd
+    state: restarted
+
+- name: reload systemd
+  command: /bin/systemctl daemon-reload
+
+- name: restart journald
+  service:
+    name: systemd-journald.service
+    state: restarted

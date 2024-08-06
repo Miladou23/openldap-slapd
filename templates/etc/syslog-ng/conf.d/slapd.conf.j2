@@ -1,0 +1,4 @@
+# $Id$
+filter f_local4 { facility(local4); };
+destination slapd { file("{{ slapd_log_path }}/slapd.log"); };
+log { source({{ syslogng_src }}); filter(f_local4); destination(slapd); };

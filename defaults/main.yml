@@ -1,0 +1,57 @@
+---
+# deploy client configuration (certificates path)
+slapd_clientconf: false
+
+ldap_root_pass_file: "/root/.ldap_root_pass"
+slapd_rootpw_file: "/root/.slapd_rootpw.conf"
+
+slapd_syncrepl_file: "/root/.slapd_syncrepl.conf"
+slapd_syncrepl_rid: 0
+slapd_syncrepl_conftls: "tls_cacert=/etc/ssl/certs/cachain.pem"
+slapd_syncrepl_filter: "(objectclass=*)"
+
+certr_group: ssl-cert
+slapd_cert_basename: "{{ ansible_fqdn }}"
+# p5: fqdn-orderid.crt (pas géré), p7: fqdn.pem
+slapd_cert_style: p7
+# certwatch pas forcément présent de base, à revoir
+slapd_certwatch: false
+
+# ajout d'un restart journalier dans le cron
+slapd_restart: false
+
+slapd_overlay_memberof: true
+slapd_replica: false
+
+slapd_basedn: "dc=u-paris,dc=fr"
+
+# Options diverses pour la ligne de commande slapd
+slapd_options: ""
+
+# Permet d'augmenter la limite nofile à la valeur donnée, vide pour prendre la valeur par défaut
+slapd_nofilelimit: ""
+
+# suppression de la configuration slapd.d et données
+slapd_reset: false
+# slaptests extra options, passer '-u' a l'initialisation (base vide)
+slaptest_extra: "{{ '-u' if slapd_reset else '' }}"
+
+# Options journald pour le namespace slapd, la plupart des paramètres sont directement dans le fichier
+journald_ratelimitburst: 20000
+journald_systemmaxuse: "8GB"
+
+# Anciennement dépendant de la distribution
+
+slapd_packages:
+  - ldap-utils
+  - slapd
+
+slapd_user: openldap
+slapd_group: openldap
+
+slapd_vardir: /var/lib/ldap
+slapd_cert_basedir: /usr/local/etc/ssl
+slapd_conf_basedir: /etc/ldap
+slapd_run_dir: /var/run/slapd
+slapd_modulepath: /usr/lib/ldap
+slapd_sysconfig: default/slapd

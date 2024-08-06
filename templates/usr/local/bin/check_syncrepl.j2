@@ -1,0 +1,38 @@
+#!/bin/bash
+
+echo -e "\nContextCSN\n"
+
+echo "Master:"
+ldapsearch -x -LLL -H {{ ldap_master_url }} -D "cn=ldapr,ou=apps,{{ slapd_basedn }}" -y {{ ldap_syncrepl_pass_file }}.noeol -s base -b "{{ slapd_basedn }}" contextCSN
+echo "Slave:"
+ldapsearch -x -LLL -H ldap://localhost -D "cn=root,{{ slapd_basedn }}" -y {{ ldap_root_pass_file }}.noeol -s base -b "{{ slapd_basedn }}" contextCSN
+
+if [ "$1" = "full" ]; then
+
+  umask 0077
+
+  echo -e "\nMaster full dump\n"
+  time ldapsearch -x -H {{ ldap_master_url }} -D "cn=ldapr,ou=apps,{{ slapd_basedn }}" -y {{ ldap_syncrepl_pass_file }}.noeol -b "{{ slapd_basedn }}" > /tmp/tmp.master.ldif
+  echo
+  tail -n 2 /tmp/tmp.master.ldif
+
+  echo -e "\nSlave full dump\n"
+  time ldapsearch -x -H ldap://localhost -D "cn=root,{{ slapd_basedn }}" -y {{ ldap_root_pass_file }}.noeol -b "{{ slapd_basedn }}" > /tmp/tmp.slave.ldif
+  echo
+  tail -n 2 /tmp/tmp.slave.ldif
+
+  echo -e "\nDiff\n"
+  diff -U 0 /tmp/tmp.master.ldif /tmp/tmp.slave.ldif | grep ^@@ | wc -l
+  echo
+
+  if [ "$2" = "keep" ]; then
+
+    ls -la /tmp/tmp.master.ldif /tmp/tmp.slave.ldif
+
+  else
+
+    /bin/rm -v /tmp/tmp.master.ldif /tmp/tmp.slave.ldif
+
+  fi
+
+fi

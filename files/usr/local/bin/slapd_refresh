@@ -1,0 +1,36 @@
+#!/bin/bash
+# $Id$
+
+# Rafraichissement du backend BDB de slapd
+
+# Usage principal: sans arguments fait un nettoyage des archives BDB
+# Un db_recover est fait systématiquement, vu que slapd a tentance à mal s'arrêter. C'est rapide, sauf sur le master où ça peut prendre quelques minutes. Si le recover échoue, les commandes suivantes échoueront aussi naturellement.
+
+# Optionnellement: peut aussi refaire des indexes dont la liste des attributs est passée en paramètre de la commande
+
+LOG="logger -p local4.info -t slapd_refresh"
+
+/sbin/service slapd stop 2>&1 | grep -v "OK"
+/sbin/service slapd status 2>&1 | $LOG
+
+echo "db_recover" | $LOG
+sudo -u ldap db_recover -h /var/lib/ldap/data
+
+echo "db_archive -d" | $LOG
+sudo -u ldap db_archive -d -h /var/lib/ldap/data
+
+if [ -d /var/lib/ldap/accesslog ]; then
+  echo "db_recover accesslog" | $LOG
+  sudo -u ldap db_recover -h /var/lib/ldap/accesslog
+
+  echo "db_archive -d accesslog" | $LOG
+  sudo -u ldap db_archive -d -h /var/lib/ldap/accesslog
+fi
+
+if [ $1 ]; then
+  echo "slapindex" | $LOG
+  time sudo -u ldap slapindex -t -q -b dc=univ-paris7,dc=fr $@ | $LOG
+fi
+
+/sbin/service slapd start 2>&1 | grep -v "OK" | grep -v "testing succeeded" | grep -v "No dynamic config support for overlay unique"
+/sbin/service slapd status 2>&1 | $LOG

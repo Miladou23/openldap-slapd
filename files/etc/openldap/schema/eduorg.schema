@@ -1,0 +1,63 @@
+#
+# eduOrg Objectclass version 1.1 (2002-10-23)
+#
+# See http://www.educause.edu/eduperson for background and usage
+#
+#
+# CHANGELOG
+#
+#   May 01, 2002	(gettes@georgetown.edu) Original version 1.0 experimental
+#   Oct 23, 2002	(gettes@georgetown.edu) fix typo in objectclass spec
+#                                               changed tabs to spaces
+#                                               add cn to objectclass
+#                                               No longer experimental
+#   Dec 15, 2009	(YG) replacement des caseExactIA5Match par caseExactMatch
+#                            pour les attributeType avec SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+#
+
+#
+# "eduOrg" attributes
+#
+
+attributeType ( 1.3.6.1.4.1.5923.1.2.1.2 
+        NAME 'eduOrgHomePageURI' 
+        DESC 'eduOrg per Internet2 and EDUCAUSE' 
+        EQUALITY caseExactMatch 
+        SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+
+attributeType ( 1.3.6.1.4.1.5923.1.2.1.3 
+        NAME 'eduOrgIdentityAuthNPolicyURI' 
+        DESC 'eduOrg per Internet2 and EDUCAUSE' 
+        EQUALITY caseExactMatch 
+        SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+
+attributeType ( 1.3.6.1.4.1.5923.1.2.1.4 
+        NAME 'eduOrgLegalName' 
+        DESC 'eduOrg per Internet2 and EDUCAUSE' 
+        EQUALITY caseIgnoreMatch 
+        SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+
+attributeType ( 1.3.6.1.4.1.5923.1.2.1.5 
+        NAME 'eduOrgSuperiorURI' 
+        DESC 'eduOrg per Internet2 and EDUCAUSE' 
+        EQUALITY caseExactMatch 
+        SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+
+attributeType ( 1.3.6.1.4.1.5923.1.2.1.6 
+        NAME 'eduOrgWhitePagesURI' 
+        DESC 'eduOrg per Internet2 and EDUCAUSE' 
+        EQUALITY caseExactMatch 
+        SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+
+#
+# eduOrg objectclass definition
+#
+
+objectClass ( 1.3.6.1.4.1.5923.1.2.2 
+        NAME 'eduOrg' 
+        AUXILIARY 
+        MAY ( cn $ eduOrgHomePageURI $ 
+        eduOrgIdentityAuthNPolicyURI $ eduOrgLegalName $ 
+        eduOrgSuperiorURI $ eduOrgWhitePagesURI
+        ))
+

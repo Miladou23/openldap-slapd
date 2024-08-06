@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  author: Université Paris Cité
+  description: Installs and configures OpenLDAP slapd
+  company: Université Paris Cité
+  issue_tracker_url: https://gitlab.si.u75.fr/infra/ansible/roles/openldap-slapd/issues
+  license: BSD-3-Clause
+  min_ansible_version: 2.10
+  platforms:
+    - name: Debian
+      versions:
+        - 12
+  galaxy_tags: []
